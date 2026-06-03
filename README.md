@@ -17,7 +17,26 @@
 Claude 會:建立/更新 `./.decision-iterator/<id>/session-state.json` → 重生看板 → 給你路徑。
 把 `dashboard.html` 開在瀏覽器,邊聊邊看思路長出來。
 
+## 安裝(第一次使用 / 分享給朋友)
+
+這是一個 Claude Code skill。把整個 `decision-iterator` 資料夾放進 Claude Code 的 skills 目錄即可,**不需要 GitHub 帳號**:
+
+| 系統 | 放到這裡 |
+|---|---|
+| Windows | `C:\Users\<你的使用者名>\.claude\skills\decision-iterator` |
+| macOS / Linux | `~/.claude/skills/decision-iterator` |
+
+步驟:
+1. 把拿到的 `decision-iterator.zip` 解壓縮。
+2. 把解出來的 `decision-iterator` 資料夾整個搬到上表的 skills 目錄下(若 `.claude\skills` 不存在就自己建)。
+3. 確認電腦有安裝 **[Node.js](https://nodejs.org)**(渲染看板用;任意近代版本皆可)。
+4. 重開 Claude Code → 直接說「幫我開一個決策 session」就會觸發,或輸入 `/decision-iterator`。
+
+> 全部路徑都是自動偵測的,搬到哪台電腦、哪個使用者名稱都能跑,無需修改任何檔案。
+
 ## 手動操作(可選)
+
+在 skill 資料夾內執行(`<SKILL_DIR>` = 這個 `decision-iterator` 資料夾):
 ```bash
 # 建立新 session
 node bin/new-session.mjs "決策標題" hybrid --render
@@ -25,10 +44,10 @@ node bin/new-session.mjs "決策標題" hybrid --render
 # 改完 JSON 後重生看板
 node bin/render.mjs <session-id 或 JSON 路徑>
 
-# 即時自動刷新(在 session 資料夾)
+# 即時自動刷新(在 session 資料夾,選配;需要 Python)
 python -m http.server 8765   # 開 http://localhost:8765/dashboard.html
 ```
-零依賴,只需 Node(已內建於 Next.js 開發環境)。
+零依賴,只需 Node。看板純雙擊也能開(離線可用);Python 那步只是為了「自動刷新」,沒有也沒關係。
 
 ## 檔案結構
 ```

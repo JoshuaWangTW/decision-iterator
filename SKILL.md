@@ -5,7 +5,6 @@ metadata:
   version: "1.0"
   language: "zh-TW (English for technical terms)"
   builds_on: "business-analysis + career-iteration"
-  skill_dir_windows: "C:\\Users\\User\\.claude\\skills\\decision-iterator"
 ---
 
 # 決策迭代器 — 把問題當產品來迭代
@@ -157,20 +156,25 @@ metadata:
 
 ## 狀態檔操作(具體指令)💾
 
-**Skill 目錄(本機):** `C:\Users\User\.claude\skills\decision-iterator`
+**Skill 目錄(SKILL_DIR):** 本檔(SKILL.md)所在的資料夾。Claude 載入此 skill 時已知道它的絕對路徑 — 下面指令中的 `<SKILL_DIR>` 一律代換成那個路徑(各人電腦不同,不要寫死)。常見位置:
+- Windows: `C:\Users\<你的使用者名>\.claude\skills\decision-iterator`
+- macOS / Linux: `~/.claude/skills/decision-iterator`
+
 **Session 落地:** 當前工作目錄下 `./.decision-iterator/<session-id>/`(每個專案的決策跟著專案走)。
 
 **建立新 session:**
 ```
-node "C:\Users\User\.claude\skills\decision-iterator\bin\new-session.mjs" "決策標題" <business|career|hybrid> --render
+node "<SKILL_DIR>/bin/new-session.mjs" "決策標題" <business|career|hybrid> --render
 ```
 → 產生 `./.decision-iterator/<日期>-<slug>/session-state.json` 與 `dashboard.html`。
 
 **改完狀態後重生看板**(你用 Edit/Write 直接改 JSON,然後):
 ```
-node "C:\Users\User\.claude\skills\decision-iterator\bin\render.mjs" <session-id 或 JSON 路徑>
+node "<SKILL_DIR>/bin/render.mjs" <session-id 或 JSON 路徑>
 ```
 不給參數會自動挑最近更新的 session。render 會**重算 priority.score 並寫回 JSON**,所以你只要填 `impact`/`likelihood`/`cost`,`score` 留 0 即可。
+
+> 腳本用 `import.meta.url` 自我定位,所以放在任何路徑都能跑;唯一外部需求是 **Node.js**(任意近代版本)。
 
 **狀態結構**:見 `schema/session-state.schema.json`。編輯規則:
 - 節點 `id` 唯一、`parent` 指向既有 id(根為 `null`)。
