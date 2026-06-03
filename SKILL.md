@@ -1,0 +1,203 @@
+---
+name: decision-iterator
+description: 決策迭代器 — 把任何決策(商業或職涯)當成一個要持續迭代的產品來跑:框定→拆解→驗證→收斂→決策→交付→迭代。整合 business-analysis 與 career-iteration 兩個姊妹 skill 為單一引擎,用 JSON 當大腦狀態、單檔 HTML 看板把所有思路可視化,且能在任何回合被打斷、注入新思考並重新規劃(Dynamic workflow)。觸發時機:做一個需要結構化拆解的決策、評估要不要做某件事、分析指標變化、規劃職涯/轉職/升遷、把模糊問題拆成假設樹、想要一個能持續更新且看得見思路的決策工具。觸發關鍵詞:決策迭代、decision iterator、把它當產品、issue tree、假設樹、要不要做、評估機會、為什麼下滑、客單價、商業分析、職涯規劃、轉職、升遷、向上管理、可視化決策、決策看板、中途打斷、dynamic workflow、開一個 session。
+metadata:
+  version: "1.0"
+  language: "zh-TW (English for technical terms)"
+  builds_on: "business-analysis + career-iteration(Joshua 的個人學習筆記)"
+  skill_dir_windows: "C:\\Users\\User\\.claude\\skills\\decision-iterator"
+---
+
+# 決策迭代器 — 把問題當產品來迭代
+
+## 這個工具在做什麼
+
+當使用者帶著一個**需要結構化思考的決策**來(商業或職涯),這個 skill 不是給一段答案就結束,
+而是**開一個持續的 session**:把思考過程存成 JSON 狀態、用 HTML 看板可視化、隨時可被打斷加入新思考,
+一路迭代到一個**被證據支持、帶取捨與退出條件的決策**。
+
+三個必達特性(使用者的核心需求):
+1. **所有思路可視化** → 每次更新都重生 `dashboard.html`,使用者開著就看得到假設樹、看板、洞察、決策、打斷軌跡。
+2. **可中途打斷、加入新思考** → 任何回合都能注入新節點 / 重新框定 / 重排 / 分枝 / 切鏡頭,引擎立刻重算下一步。
+3. **Dynamic workflow** → 不是固定線性腳本;引擎依「目前狀態」決定下一個最該做的階段。
+
+---
+
+## 核心橋接洞見:一台引擎,兩個鏡頭
+
+`business-analysis` 與 `career-iteration` 共用同一個思考底層:
+**假設 → 測試 → 收斂到決策 → 溝通 → 迭代**。差別只在鏡頭。
+
+| | 商業鏡頭 (business) | 職涯鏡頭 (career) |
+|---|---|---|
+| 解什麼 | 商業/數據決策(營收、機會、go/no-go) | 職涯/自我成長決策(轉職、升遷、時間) |
+| 拆解單位 | 假設樹(恆等式:量×價) | 樹狀 + HMW 子問題 |
+| 驗證方式 | 取數、資料健檢、歸因 | 低成本實驗、能量訊號、自我反思 |
+| 決策形態 | 策略建議(選項+取捨) | 職涯賭注 / 去留 / 升遷策略 |
+
+**hybrid 鏡頭**:當一個決策同時牽動兩者(例:要不要把副業轉全職 = 個人職涯賭注 × 事業營運),
+同一棵樹可同時長出 career 分枝與 business 分枝。見 `examples/sample-hybrid-decision/`。
+
+---
+
+## 操作協定(每一輪都這樣跑)⚙️
+
+> 這是讓它變成「持續應用的工具」而非一次性回答的關鍵。**每個回合都照做。**
+
+**步驟 A — 定位 session**
+- 新決策 → 建立 session(見下「狀態檔操作」)。
+- 延續既有 → 讀回該 `session-state.json`(預設找 `<cwd>/.decision-iterator/` 下最近更新的那個)。
+
+**步驟 B — 更新狀態(JSON 是唯一事實來源)**
+- 把這一輪的思考寫進狀態:framing、新增/更新節點、附證據、收斂洞察、決策選項…
+- **每個有意義的變更都補一筆 `timeline`**;打斷/注入/重框/重排/切鏡頭**一定要記**(這是「打斷可見」的來源)。
+- 更新 `session.updatedAt` 為現在時間。
+
+**步驟 C — 算下一步(Dynamic)**
+- 用下面「下一步邏輯」判斷目前真正所在階段與下一個最該做的事。
+- 在聊天回覆裡簡短可視化:目前階段 + 這輪改了什麼 + 下一步建議。
+
+**步驟 D — 重生看板(可視化)**
+- 跑 `render.mjs`(見下),它會重算分數、寫回 JSON、產生 `dashboard.html`。
+- 告訴使用者看板路徑;若他已開著且有跑簡易伺服器,會自動刷新,否則請他重新整理。
+
+**步驟 E — 偵測紅旗**
+- 對照「紅旗清單」,把觸發的反模式寫進 `redFlags` 並在回覆中一句點出(發現什麼 + 影響)。
+
+---
+
+## 鏡頭路由(自動判斷,可中途切換)
+
+- **business 關鍵詞**:營收、客單價、購買頻率、指標、下滑、成長、分店、要不要投/做、評估機會、go/no-go、市場、定價、轉換率。
+- **career 關鍵詞**:職涯、轉職、要不要離職、升遷、向上管理、冒牌者症候群、時間管理、注意力、人脈、會議、倦怠、burnout、職場成長。
+- **hybrid 訊號**:決策同時牽動「我個人要怎樣」與「事業/生意要怎樣」,或一邊是現金流安全網、另一邊是長期賭注。
+- 不確定就先問一句框定問題,再定鏡頭。鏡頭可隨時切(記 `switch-lens` timeline),既有的樹保留。
+
+---
+
+## 8 階段引擎
+
+> 這是骨幹,但**不必線性走**。引擎依狀態跳階。每階段要載哪份 reference 見 `references/INDEX.md`。
+
+| # | 階段 | 商業鏡頭做什麼 | 職涯鏡頭做什麼 | 產出寫到狀態哪 |
+|---|---|---|---|---|
+| 0 | **FRAME 框定** | 決策者是誰、不分析會怎樣、翻成決策 | 從 why 開始、目標與優先級 | `frame` |
+| 1 | **DECOMPOSE 拆解** | MECE 假設樹(恆等式) | 樹狀 + HMW 子問題 | `nodes`(parent=null 為根) |
+| 2 | **PRIORITIZE 排序** | 影響×可能性×驗證成本 | 衝擊評估 + 陽光測試 | `nodes[].priority` |
+| 3 | **TEST 驗證** | 取數+資料健檢+歸因,證實/證偽 | 低成本實驗、能量訊號 | `nodes[].evidence` + `status` |
+| 4 | **CONVERGE 收斂** | 1–3 洞察(so-what + 量級) | 反思:能量×成就交集 | `insights` |
+| 5 | **DECIDE 決策** | 策略:選項+取捨+推薦+風險 | 職涯賭注 / 去留 / 升遷 | `decision` |
+| 6 | **COMMUNICATE 交付** | BLUF 簡報、金字塔、一頁一訊息 | 向上遊說 / 職場訊息 | (回覆 + 可選文件) |
+| 7 | **ITERATE 迭代** | 記錄結果、回看 | current→next version、反思節奏 | 新 timeline + 新節點 |
+
+**各階段的鐵律(沿用兩來源 skill 的信條):**
+- 邏輯先於數據/行動:**沒有假設樹就不准查數據、不准行動**。
+- 商業問題 ≠ 數據問題;職涯問題先問 why。先把問題翻成決策。
+- so-what 強制律:每個發現都要回答「所以呢」,並標量級。
+- 洞察 ≠ 策略:策略一定要有「做什麼 / 不做什麼」的取捨。
+- 半成品不算完成:走到 DECIDE 並能交付才算一輪完成。
+- 把對象當產品:每輪結束設下一版假設與退出條件。
+
+---
+
+## 下一步邏輯(引擎怎麼決定下一步)
+
+依序檢查,命中即為「下一步」:
+1. `frame.decision` 為空 → **FRAME**。
+2. `nodes` 為空 → **DECOMPOSE**(先結構)。
+3. 有 `open` 的非 metric 節點、且沒有 `testing` 中的 → **TEST 最高分那條**(`score = impact×likelihood/cost`)。
+4. 有 `testing` 中的 → 把證據補齊再裁決。
+5. 已裁決(confirmed/refuted)≥2 條、但 `insights` 為空 → **CONVERGE**。
+6. 有 `insights`、但 `decision.chosen` 為空 → **DECIDE**。
+7. 有 `decision.chosen` → **COMMUNICATE / ITERATE**。
+8. 任何時候被打斷注入 → 先處理打斷(見下),再從第 1 點重判。
+
+> 看板的「🎯 引擎建議」會同步顯示這個判斷,使用者看得到。
+
+---
+
+## 打斷與注入(Dynamic 的操作面)🔀
+
+**核心承諾:使用者可以在任何回合丟進新想法,不必等流程跑完。** 把自然語言對應到狀態變更並記 timeline:
+
+| 使用者意圖(範例) | 動作 type | 對狀態做什麼 |
+|---|---|---|
+| 「再加一個假設:可能是 X」「我突然想到…」 | `inject` | 新增 node(設 priority)→ 重算下一步 |
+| 「問題框錯了,重點其實是 Y」 | `repivot` | 改 `frame`、把受影響節點設 `parked` |
+| 「先別管那條,先看這條」「這條更重要」 | `reprioritize` | 調 `priority` 重排 |
+| 「這條其實分成兩個子問題」 | `branch` | 在該 node 下加子節點 |
+| 「從職涯角度看看」「這也牽涉生意」 | `switch-lens` | 改 `lens`(可進 hybrid),樹保留 |
+| 「這條我驗過了,結果是…」 | (status 變更) | 加 `evidence` + 改 `status` |
+
+每次打斷都:① 寫一筆 timeline ② 更新 updatedAt ③ 重算下一步 ④ 重生看板。
+**不要因為「現在在第 N 階段」就拒絕使用者的新輸入** — 引擎本來就會重新規劃。
+
+---
+
+## 紅旗偵測(出現就寫進 redFlags 並點出)🚩
+
+合併兩來源 skill 的反模式:
+- 沒假設就查數據 / 沒 why 就行動。
+- 把數據分析當商業分析(只有漂亮圖表、沒決策)。
+- 有數字、沒 so-what。
+- 洞察當策略(列發現卻沒取捨)。
+- 過早收斂 / 確認偏誤(只找支持既有結論的證據)。
+- 口徑不清(指標定義含糊)。
+- 半成品當完成(只走到 TEST 就說做完)。
+- 簡報沒結論先行。
+- 一次 all-in 不做測試 / 反過來「未驗就偏好某條路」。
+- 用「沒時間」當藉口(真問題是注意力沒分配對)。
+- 把向上管理當逢迎,或以為「做好自然會被看見」。
+- 等「準備好」才行動(冒牌者陷阱)。
+- 硬撐到 burnout。
+
+> redFlags 字串**不要**自己加 🚩(看板會自動加)。寫成「發現什麼(影響)」一句話。
+
+---
+
+## 狀態檔操作(具體指令)💾
+
+**Skill 目錄(本機):** `C:\Users\User\.claude\skills\decision-iterator`
+**Session 落地:** 當前工作目錄下 `./.decision-iterator/<session-id>/`(每個專案的決策跟著專案走)。
+
+**建立新 session:**
+```
+node "C:\Users\User\.claude\skills\decision-iterator\bin\new-session.mjs" "決策標題" <business|career|hybrid> --render
+```
+→ 產生 `./.decision-iterator/<日期>-<slug>/session-state.json` 與 `dashboard.html`。
+
+**改完狀態後重生看板**(你用 Edit/Write 直接改 JSON,然後):
+```
+node "C:\Users\User\.claude\skills\decision-iterator\bin\render.mjs" <session-id 或 JSON 路徑>
+```
+不給參數會自動挑最近更新的 session。render 會**重算 priority.score 並寫回 JSON**,所以你只要填 `impact`/`likelihood`/`cost`,`score` 留 0 即可。
+
+**狀態結構**:見 `schema/session-state.schema.json`。編輯規則:
+- 節點 `id` 唯一、`parent` 指向既有 id(根為 `null`)。
+- 每次變更更新 `session.updatedAt`(ISO8601)。
+- 重要變更補 `timeline`。
+
+**即時自動刷新(可選)**:在 session 資料夾跑 `python -m http.server 8765`,瀏覽器開 `http://localhost:8765/dashboard.html`,看板每 2 秒自動拉新狀態。否則純雙擊 + 手動「↻ 重新整理」也能看到最新(因為每次 render 都把狀態內嵌進 HTML)。
+
+---
+
+## 交付模板(COMMUNICATE 階段用)
+
+**Exec Summary(BLUF)**
+> 結論:[一句話決策 + 建議]。
+> 三個支撐:1)… 2)… 3)…(各帶量級)
+> 下一步:[誰、做什麼、何時]。風險/前提:[…]。
+
+**職涯賭注**
+> 假設:[我想往 X];驗證實驗:[低成本怎麼測]→成功訊號:[看到什麼算對]。
+> 退出條件:[什麼訊號出現就停損];反思節奏:[多久回看能量訊號]。
+
+---
+
+## 紅線 / 邊界
+- 這是 Joshua 的**個人學習消化筆記**整合工具,記錄方法與思路,不重製課程逐字教材。
+- 不取代、不改動來源 skill `business-analysis` 與 `career-iteration`。
+- 需要心理治療等級介入的情緒困境 → 建議尋求專業協助,不套框架。
+
+## References(需要時才讀)
+見 `references/INDEX.md` — 依階段對應到 8 份參考檔(3 商業 + 5 職涯)。

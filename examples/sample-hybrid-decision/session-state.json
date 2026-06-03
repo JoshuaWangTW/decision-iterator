@@ -1,0 +1,334 @@
+{
+  "schemaVersion": "1.0",
+  "session": {
+    "id": "sample-hybrid-decision",
+    "title": "（示範）要不要把週末線上課程副業轉成全職？",
+    "createdAt": "2026-01-15T09:00:00+08:00",
+    "updatedAt": "2026-01-15T11:30:00+08:00"
+  },
+  "lens": "hybrid",
+  "phase": "converge",
+  "frame": {
+    "rawAsk": "我到底要不要辭職，把週末做的線上課程副業轉成全職？",
+    "decision": "未來 12 個月，把主要時間/注意力押在現職、全職做線上課程、還是並行過渡？",
+    "owner": "決策者本人；牽動家庭收入穩定度與長期事業方向",
+    "stakes": "押錯主軸＝浪費 12 個月最貴的注意力，且可能兩邊都做不好；不決定則持續分心內耗",
+    "successCriteria": "選出在『投入度 × 財務安全 × 長期成長』三者取捨最優、且帶明確退出條件的一條路"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "parent": null,
+      "label": "職涯：全職做線上課程，能讓我更投入且支撐長期目標嗎？",
+      "lens": "career",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 5,
+        "likelihood": 4,
+        "cost": 3,
+        "score": 6.67
+      },
+      "status": "open",
+      "evidence": [],
+      "note": "把『轉全職』當成待驗假設，不是非賭不可的人生決定。"
+    },
+    {
+      "id": "n1a",
+      "parent": "n1",
+      "label": "投入訊號：做課程內容時是有能量還是被消耗？",
+      "lens": "career",
+      "type": "sub-question",
+      "priority": {
+        "impact": 4,
+        "likelihood": 4,
+        "cost": 2,
+        "score": 8
+      },
+      "status": "confirmed",
+      "evidence": [
+        {
+          "ts": "2026-01-15T10:15:00+08:00",
+          "kind": "reflection",
+          "summary": "回看：錄課與回覆學員時會忘記時間；做現職的例行報表時一直看時鐘。能量來源在教學與創作。",
+          "verdict": "supports"
+        }
+      ],
+      "note": "投入訊號比頭銜誠實。"
+    },
+    {
+      "id": "n1b",
+      "parent": "n1",
+      "label": "財務安全：課程月收入能否覆蓋家庭 12 個月現金流？",
+      "lens": "career",
+      "type": "metric",
+      "priority": {
+        "impact": 5,
+        "likelihood": 3,
+        "cost": 1,
+        "score": 15
+      },
+      "status": "refuted",
+      "evidence": [
+        {
+          "ts": "2026-01-15T10:20:00+08:00",
+          "kind": "data",
+          "summary": "目前課程月收入僅覆蓋家庭支出約 4 成，安全網尚未成立。",
+          "verdict": "refutes"
+        }
+      ],
+      "note": "這條被推翻很有價值 — 直接排除『立刻 all-in』。"
+    },
+    {
+      "id": "n1c",
+      "parent": "n1",
+      "label": "履歷槓桿：全職創作者經歷對未來路線的加分有多大？",
+      "lens": "career",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 3,
+        "likelihood": 4,
+        "cost": 3,
+        "score": 4
+      },
+      "status": "testing",
+      "evidence": [
+        {
+          "ts": "2026-01-15T10:30:00+08:00",
+          "kind": "experiment",
+          "summary": "約談 2 位轉全職的創作者，初步回饋『加分但非決定性』。",
+          "verdict": "mixed"
+        }
+      ],
+      "note": ""
+    },
+    {
+      "id": "n2",
+      "parent": null,
+      "label": "事業：在我全力投入下，課程業務 12 個月內能否自負盈虧？",
+      "lens": "business",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 5,
+        "likelihood": 3,
+        "cost": 4,
+        "score": 3.75
+      },
+      "status": "open",
+      "evidence": [],
+      "note": ""
+    },
+    {
+      "id": "n2a",
+      "parent": "n2",
+      "label": "營收 = 報名人數 × 客單價；目前成長卡在哪個因子？",
+      "lens": "business",
+      "type": "sub-question",
+      "priority": {
+        "impact": 4,
+        "likelihood": 5,
+        "cost": 2,
+        "score": 10
+      },
+      "status": "confirmed",
+      "evidence": [
+        {
+          "ts": "2026-01-15T10:35:00+08:00",
+          "kind": "data",
+          "summary": "第一刀拆解：營收瓶頸約 7 成來自報名人數(流量×轉換)，而非客單價。",
+          "verdict": "supports"
+        }
+      ],
+      "note": "先有恆等式，再切維度。"
+    },
+    {
+      "id": "n2a1",
+      "parent": "n2a",
+      "label": "瓶頸主要在『流量不足』而非『轉換率低』",
+      "lens": "business",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 4,
+        "likelihood": 4,
+        "cost": 2,
+        "score": 8
+      },
+      "status": "confirmed",
+      "evidence": [
+        {
+          "ts": "2026-01-15T10:38:00+08:00",
+          "kind": "data",
+          "summary": "落地頁轉換率健康(約 4%)，但月自然流量偏低 → 槓桿在內容行銷/SEO。",
+          "verdict": "supports"
+        }
+      ],
+      "note": "流量槓桿多半可透過內容投資複製。"
+    },
+    {
+      "id": "n2a2",
+      "parent": "n2a",
+      "label": "客單價可靠進階課/訂閱制拉升",
+      "lens": "business",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 3,
+        "likelihood": 3,
+        "cost": 2,
+        "score": 4.5
+      },
+      "status": "testing",
+      "evidence": [],
+      "note": ""
+    },
+    {
+      "id": "n2b",
+      "parent": "n2",
+      "label": "投放付費廣告是成長引擎還是現金黑洞？",
+      "lens": "business",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 5,
+        "likelihood": 3,
+        "cost": 4,
+        "score": 3.75
+      },
+      "status": "open",
+      "evidence": [],
+      "note": "影響高但未驗 — 別把營收期望建在它身上。"
+    },
+    {
+      "id": "n3",
+      "parent": null,
+      "label": "並行：現職當現金流安全網 + 課程當長期賭注，能否同時成立？",
+      "lens": "career",
+      "type": "hypothesis",
+      "priority": {
+        "impact": 5,
+        "likelihood": 4,
+        "cost": 4,
+        "score": 5
+      },
+      "status": "open",
+      "evidence": [],
+      "note": "10:40 打斷時注入的第三條路。"
+    },
+    {
+      "id": "n3a",
+      "parent": "n3",
+      "label": "並行的情境轉換成本，會不會讓兩邊都做不好？",
+      "lens": "career",
+      "type": "sub-question",
+      "priority": {
+        "impact": 4,
+        "likelihood": 4,
+        "cost": 3,
+        "score": 5.33
+      },
+      "status": "open",
+      "evidence": [],
+      "note": "情境轉換是注意力最大的敵人 — 需實測。"
+    }
+  ],
+  "insights": [
+    {
+      "id": "i1",
+      "finding": "立刻 all-in 被財務現實排除；現職的真正價值是『現金流安全網』而非長期歸宿",
+      "why": "課程收入只覆蓋 4 成支出，硬轉全職風險過高；但投入訊號明確指向課程 — 這翻轉了『二選一』的框架",
+      "magnitude": "直接決定 12 個月時間配置的主軸",
+      "fromNodes": [
+        "n1a",
+        "n1b",
+        "n1c"
+      ]
+    },
+    {
+      "id": "i2",
+      "finding": "課程成長瓶頸可被拆解，且主槓桿在『流量』（多半可投資複製），不是無解的轉換問題",
+      "why": "代表全力投入有結構性勝算，不是賭運氣 — 提高了長期賭注的期望值",
+      "magnitude": "營收瓶頸約 7 成來自流量",
+      "fromNodes": [
+        "n2a1"
+      ]
+    }
+  ],
+  "decision": {
+    "options": [
+      {
+        "label": "維持現職、暫緩課程",
+        "tradeoffs": "得現金流安全；放棄課程動能與長期方向",
+        "expectedImpact": "收入最穩，但課程可能停滯、投入感持續被消耗",
+        "risks": "錯過課程成長窗口；長期後悔成本高"
+      },
+      {
+        "label": "立刻全職做課程",
+        "tradeoffs": "全力衝事業；放棄穩定薪資安全網",
+        "expectedImpact": "若付費投放(n2b)成功可跳級成長",
+        "risks": "現金流風險高(n1b 已證偽)、家庭壓力大；n2b 尚未驗證"
+      },
+      {
+        "label": "並行過渡：現職為安全網 + 課程為長期賭注（分時段保護深度工作）",
+        "tradeoffs": "犧牲部分注意力深度，換取風險分散與保留兩條路",
+        "expectedImpact": "風險最低、可邊做邊驗，再依訊號加碼",
+        "risks": "情境轉換成本(n3a)未驗 — 可能讓兩邊都半吊子；需設退出條件"
+      }
+    ],
+    "chosen": "",
+    "nextSteps": [
+      {
+        "who": "決策者",
+        "what": "用小額預算測付費投放的 CAC/LTV，驗證 n2b（成長引擎 vs 黑洞）",
+        "when": "2026-02 第 2 週"
+      },
+      {
+        "who": "決策者",
+        "what": "排一個月『並行過渡』試跑，記錄情境轉換成本以驗 n3a",
+        "when": "2026-02 第 1 週"
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "ts": "2026-01-15T09:00:00+08:00",
+      "type": "phase-change",
+      "detail": "建立 session，進入 FRAME 階段"
+    },
+    {
+      "ts": "2026-01-15T09:20:00+08:00",
+      "type": "phase-change",
+      "detail": "框定完成 → DECOMPOSE：拆出職涯(n1)與事業(n2)兩條分枝"
+    },
+    {
+      "ts": "2026-01-15T09:35:00+08:00",
+      "type": "branch",
+      "detail": "n2a 下分出 n2a1 / n2a2 兩條子假設"
+    },
+    {
+      "ts": "2026-01-15T10:10:00+08:00",
+      "type": "phase-change",
+      "detail": "進入 TEST：用數據與自我反思並行驗證"
+    },
+    {
+      "ts": "2026-01-15T10:40:00+08:00",
+      "type": "inject",
+      "detail": "打斷：想到第三條路『並行過渡』→ 注入 n3(hybrid) 與子問題 n3a"
+    },
+    {
+      "ts": "2026-01-15T10:42:00+08:00",
+      "type": "switch-lens",
+      "detail": "鏡頭由 career 切到 hybrid（同時看職涯賭注與事業營運）"
+    },
+    {
+      "ts": "2026-01-15T11:15:00+08:00",
+      "type": "repivot",
+      "detail": "重框：決策由『二選一』改為『主軸選擇 + 退出條件』"
+    },
+    {
+      "ts": "2026-01-15T11:30:00+08:00",
+      "type": "phase-change",
+      "detail": "n1a/n1b/n2a1 已裁決 → 進入 CONVERGE 收斂洞察"
+    }
+  ],
+  "redFlags": [
+    "n2b（付費投放）影響高卻仍未驗證，別把營收期望建在未驗假設上（過早收斂）",
+    "尚未替『並行過渡』路線設定退出條件，當心情境轉換成本讓兩邊都半吊子"
+  ]
+}

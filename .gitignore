@@ -1,0 +1,12 @@
+# 使用者執行時產生的 session(各專案的決策內容,不進版控)
+.decision-iterator/
+
+# 範例的渲染產物(由 session-state.json 即可重生,不必追蹤)
+examples/**/dashboard.html
+
+# OS / 編輯器雜物
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

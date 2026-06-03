@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>決策迭代器 · Decision Iterator</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --panel-2: #1c232d; --border: #2a323d;
+    --txt: #e6edf3; --txt-dim: #9aa7b4; --txt-faint: #6b7785;
+    --biz: #4aa3ff; --career: #c084fc; --hybrid: #34d399;
+    --open: #6b7785; --testing: #4aa3ff; --confirmed: #34d399; --refuted: #f87171; --parked: #fbbf24;
+    --flag: #f87171; --accent: #ffb454;
+    --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+    --sans: "Inter", "Noto Sans TC", -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--txt); font-family: var(--sans); font-size: 14px; line-height: 1.55; }
+  a { color: var(--biz); }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 18px 22px 80px; }
+
+  /* Header */
+  header.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 6px 0 14px; border-bottom: 1px solid var(--border); }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: .3px; }
+  .title .sub { font-size: 12px; color: var(--txt-faint); font-weight: 400; margin-left: 8px; }
+  .badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
+  .badge.lens-business { color: var(--biz); border-color: var(--biz); }
+  .badge.lens-career { color: var(--career); border-color: var(--career); }
+  .badge.lens-hybrid { color: var(--hybrid); border-color: var(--hybrid); }
+  .spacer { flex: 1; }
+  .live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt-faint); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--txt-faint); }
+  .dot.on { background: var(--confirmed); box-shadow: 0 0 8px var(--confirmed); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
+  button.refresh { background: var(--panel-2); color: var(--txt); border: 1px solid var(--border); border-radius: 7px; padding: 5px 11px; cursor: pointer; font-size: 12px; }
+  button.refresh:hover { border-color: var(--biz); }
+
+  /* Phase rail */
+  .rail { display: flex; gap: 6px; margin: 16px 0 6px; flex-wrap: wrap; }
+  .phase { flex: 1; min-width: 96px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; position: relative; }
+  .phase .n { font-family: var(--mono); font-size: 10px; color: var(--txt-faint); }
+  .phase .nm { font-size: 13px; font-weight: 600; margin-top: 1px; }
+  .phase .en { font-size: 10px; color: var(--txt-faint); letter-spacing: .5px; }
+  .phase.done { border-color: #2f5d44; }
+  .phase.done .nm { color: var(--confirmed); }
+  .phase.current { border-color: var(--accent); background: #20262e; box-shadow: 0 0 0 1px var(--accent) inset; }
+  .phase.current .nm { color: var(--accent); }
+  .next-cue { margin: 10px 0 4px; background: linear-gradient(90deg, #1f2a24, var(--panel)); border: 1px solid #2f5d44; border-left: 3px solid var(--confirmed); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .next-cue b { color: var(--confirmed); }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card h2 { font-size: 13px; margin: 0 0 10px; color: var(--txt-dim); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; display:flex; align-items:center; gap:8px; }
+  .card h2 .cnt { font-family: var(--mono); font-size: 11px; color: var(--txt-faint); font-weight: 400; }
+
+  /* Frame card */
+  .frame-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+  .frame-grid dt { color: var(--txt-faint); font-size: 12px; white-space: nowrap; }
+  .frame-grid dd { margin: 0; }
+  .frame-grid dd.decision { font-weight: 600; color: var(--accent); }
+
+  /* Issue tree */
+  ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0; }
+  ul.tree ul { margin-left: 18px; border-left: 1px dashed var(--border); padding-left: 12px; }
+  .node { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px; margin: 4px 0; border-radius: 7px; background: var(--panel-2); border: 1px solid var(--border); border-left-width: 3px; }
+  .node .nid { font-family: var(--mono); font-size: 10px; color: var(--txt-faint); padding-top: 2px; }
+  .node .nbody { flex: 1; }
+  .node .nlabel { font-size: 13px; }
+  .node .nmeta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
+  .node.s-open { border-left-color: var(--open); }
+  .node.s-testing { border-left-color: var(--testing); }
+  .node.s-confirmed { border-left-color: var(--confirmed); }
+  .node.s-refuted { border-left-color: var(--refuted); }
+  .node.s-refuted .nlabel { text-decoration: line-through; color: var(--txt-faint); }
+  .node.s-parked { border-left-color: var(--parked); opacity: .7; }
+  .pill { font-size: 10px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--txt-dim); white-space: nowrap; }
+  .pill.st-open { color: var(--open); border-color: var(--open); }
+  .pill.st-testing { color: var(--testing); border-color: var(--testing); }
+  .pill.st-confirmed { color: var(--confirmed); border-color: var(--confirmed); }
+  .pill.st-refuted { color: var(--refuted); border-color: var(--refuted); }
+  .pill.st-parked { color: var(--parked); border-color: var(--parked); }
+  .pill.lens-business { color: var(--biz); border-color: #2d4a6b; }
+  .pill.lens-career { color: var(--career); border-color: #5a3d75; }
+  .score { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+  .ev { font-size: 11px; color: var(--txt-faint); }
+
+  /* Kanban */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .kanban { grid-template-columns: 1fr 1fr; } }
+  .col { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px; min-height: 60px; }
+  .col h3 { font-size: 11px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .5px; display:flex; justify-content:space-between; }
+  .col.k-open h3 { color: var(--open); }
+  .col.k-testing h3 { color: var(--testing); }
+  .col.k-confirmed h3 { color: var(--confirmed); }
+  .col.k-refuted h3 { color: var(--refuted); }
+  .kcard { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; font-size: 12px; }
+  .kcard .kid { font-family: var(--mono); font-size: 9px; color: var(--txt-faint); }
+
+  /* Insights */
+  .insight { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 7px; padding: 9px 12px; margin-bottom: 9px; background: var(--panel-2); }
+  .insight .finding { font-weight: 600; }
+  .insight .why { color: var(--txt-dim); font-size: 12px; margin-top: 3px; }
+  .insight .mag { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 4px; }
+
+  /* Decision */
+  table.opts { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.opts th, table.opts td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.opts th { color: var(--txt-faint); font-weight: 600; font-size: 11px; }
+  table.opts tr.chosen td { background: #1f2a24; }
+  table.opts tr.chosen td:first-child { border-left: 3px solid var(--confirmed); font-weight: 600; }
+  .nextsteps { margin-top: 12px; }
+  .step { display: flex; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .step .who { color: var(--biz); font-weight: 600; min-width: 90px; }
+  .step .when { color: var(--txt-faint); margin-left: auto; font-family: var(--mono); font-size: 11px; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 18px; }
+  .timeline::before { content: ""; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px; background: var(--border); }
+  .tl { position: relative; padding: 5px 0 5px 4px; font-size: 12px; }
+  .tl::before { content: ""; position: absolute; left: -16px; top: 9px; width: 9px; height: 9px; border-radius: 50%; background: var(--txt-faint); border: 2px solid var(--bg); }
+  .tl.t-inject::before { background: var(--accent); }
+  .tl.t-repivot::before { background: var(--refuted); }
+  .tl.t-branch::before { background: var(--career); }
+  .tl.t-reprioritize::before { background: var(--testing); }
+  .tl.t-switch-lens::before { background: var(--hybrid); }
+  .tl.t-phase-change::before { background: var(--confirmed); }
+  .tl .tt { font-family: var(--mono); font-size: 10px; color: var(--txt-faint); }
+  .tl .tg { font-size: 10px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--border); color: var(--txt-dim); margin-right: 6px; }
+  .tl.t-inject .tg { color: var(--accent); border-color: var(--accent); }
+  .tl.t-repivot .tg { color: var(--refuted); border-color: var(--refuted); }
+
+  /* Red flags */
+  .flags { display: flex; flex-direction: column; gap: 6px; }
+  .flag { background: #2a1a1a; border: 1px solid #5a2d2d; border-left: 3px solid var(--flag); border-radius: 7px; padding: 7px 11px; font-size: 12px; color: #fca5a5; }
+  .empty { color: var(--txt-faint); font-size: 12px; font-style: italic; padding: 4px 0; }
+  footer { margin-top: 24px; color: var(--txt-faint); font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="title" id="title">—<span class="sub">決策迭代器 · Decision Iterator</span></span>
+    </div>
+    <span class="badge" id="lensBadge">—</span>
+    <span class="spacer"></span>
+    <span class="live"><span class="dot" id="liveDot"></span><span id="liveTxt">快照模式</span></span>
+    <span class="live" id="updated">—</span>
+    <button class="refresh" onclick="manualRefresh()">↻ 重新整理</button>
+  </header>
+
+  <div class="rail" id="rail"></div>
+  <div class="next-cue" id="nextCue"></div>
+
+  <div class="grid">
+    <div class="card" id="frameCard">
+      <h2>① 問題框定 <span class="cnt">FRAME</span></h2>
+      <dl class="frame-grid" id="frame"></dl>
+    </div>
+
+    <div class="card" id="flagsCard">
+      <h2>⚑ 反模式紅旗 <span class="cnt" id="flagsCnt"></span></h2>
+      <div class="flags" id="flags"></div>
+    </div>
+
+    <div class="card full">
+      <h2>② 假設樹 / Issue Tree <span class="cnt" id="treeCnt"></span></h2>
+      <ul class="tree" id="tree"></ul>
+    </div>
+
+    <div class="card full">
+      <h2>③ 假設看板 <span class="cnt">依優先分數排序</span></h2>
+      <div class="kanban" id="kanban"></div>
+    </div>
+
+    <div class="card">
+      <h2>④ 收斂洞察 <span class="cnt" id="insCnt"></span></h2>
+      <div id="insights"></div>
+    </div>
+
+    <div class="card">
+      <h2>⑤ 決策與建議 <span class="cnt" id="decCnt"></span></h2>
+      <div id="decision"></div>
+    </div>
+
+    <div class="card full">
+      <h2>⑥ 時間軸 / 打斷軌跡 <span class="cnt" id="tlCnt"></span></h2>
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+
+  <footer>決策迭代器 — 把問題(商業或職涯)當產品來迭代 · 狀態檔為單一事實來源,本頁僅為視圖</footer>
+</div>
+
+<script>
+// ===== 狀態注入點:render.mjs 會把下面這行的占位符換成 session-state.json 內容 =====
+const EMBEDDED_STATE = __STATE__;
+let lastStamp = null;
+
+const PHASES = [
+  ["0","frame","框定","FRAME"],["1","decompose","拆解","DECOMPOSE"],
+  ["2","prioritize","排序","PRIORITIZE"],["3","test","驗證","TEST"],
+  ["4","converge","收斂","CONVERGE"],["5","decide","決策","DECIDE"],
+  ["6","communicate","交付","COMMUNICATE"],["7","iterate","迭代","ITERATE"]
+];
+const STATUS_TXT = { open:"待驗", testing:"驗證中", confirmed:"成立", refuted:"推翻", parked:"擱置" };
+const TYPE_TXT = { hypothesis:"假設", metric:"指標", experiment:"實驗", "sub-question":"子問題" };
+const LENS_TXT = { business:"商業", career:"職涯", hybrid:"商業×職涯" };
+const TL_TXT = { "phase-change":"階段", inject:"注入", repivot:"重框", reprioritize:"重排", branch:"分枝", "switch-lens":"切鏡頭", note:"註記" };
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const score = p => p && p.cost ? +( (p.impact * p.likelihood) / p.cost ).toFixed(2) : 0;
+
+function nextAction(st) {
+  const ns = st.nodes || [];
+  const open = ns.filter(n => n.status === "open" && n.type !== "metric");
+  const testing = ns.filter(n => n.status === "testing");
+  const settled = ns.filter(n => n.status === "confirmed" || n.status === "refuted");
+  if (!st.frame || !st.frame.decision) return "先 <b>框定</b>:把這題翻成一個要做的決策(決策者/賭注/成功標準)。";
+  if (ns.length === 0) return "先 <b>拆解</b>:在碰數據/行動前,把驅動因子拆成 MECE 假設樹。";
+  if (open.length && !testing.length) {
+    const top = [...open].sort((a,b)=>score(b.priority)-score(a.priority))[0];
+    return `下一步 <b>驗證</b> 最高優先假設 <code>${esc(top.id)}</code>:${esc(top.label)}(分數 ${score(top.priority)})。`;
+  }
+  if (testing.length) return `有 ${testing.length} 條假設 <b>驗證中</b>,先把證據補齊再裁決。`;
+  if (settled.length >= 2 && (!st.insights || !st.insights.length)) return "夠多假設已裁決,進入 <b>收斂</b>:把發現收成 1–3 條帶 so-what 的洞察。";
+  if ((st.insights||[]).length && (!st.decision || !st.decision.chosen)) return "已有洞察但尚未決策,進入 <b>決策</b>:列選項+取捨,選一條並寫風險。";
+  if (st.decision && st.decision.chosen && st.phase !== "iterate") return "已有決策,進入 <b>交付/迭代</b>:打包 BLUF + 記錄結果,設下一版假設。";
+  return "持續迭代:有新資訊就注入新節點,引擎會重算下一步。";
+}
+
+function renderRail(st) {
+  const idx = PHASES.findIndex(p => p[1] === st.phase);
+  document.getElementById("rail").innerHTML = PHASES.map((p,i) => {
+    const cls = i === idx ? "current" : (i < idx ? "done" : "");
+    return `<div class="phase ${cls}"><div class="n">PHASE ${p[0]}</div><div class="nm">${p[2]}</div><div class="en">${p[3]}</div></div>`;
+  }).join("");
+  document.getElementById("nextCue").innerHTML = "🎯 引擎建議:" + nextAction(st);
+}
+
+function renderFrame(f) {
+  f = f || {};
+  document.getElementById("frame").innerHTML = `
+    <dt>決策</dt><dd class="decision">${esc(f.decision) || "<span class='empty'>尚未框定</span>"}</dd>
+    <dt>決策者/why</dt><dd>${esc(f.owner) || "—"}</dd>
+    <dt>賭注</dt><dd>${esc(f.stakes) || "—"}</dd>
+    <dt>成功標準</dt><dd>${esc(f.successCriteria) || "—"}</dd>
+    <dt>原始請求</dt><dd style="color:var(--txt-faint)">${esc(f.rawAsk) || "—"}</dd>`;
+}
+
+function nodeHTML(n, childrenMap) {
+  const sc = score(n.priority);
+  const ev = (n.evidence||[]).length;
+  const kids = childrenMap[n.id] || [];
+  return `<li>
+    <div class="node s-${esc(n.status)}">
+      <span class="nid">${esc(n.id)}</span>
+      <div class="nbody">
+        <div class="nlabel">${esc(n.label)}</div>
+        <div class="nmeta">
+          <span class="pill lens-${esc(n.lens)}">${LENS_TXT[n.lens]||n.lens}</span>
+          <span class="pill">${TYPE_TXT[n.type]||n.type}</span>
+          <span class="pill st-${esc(n.status)}">${STATUS_TXT[n.status]||n.status}</span>
+          <span class="score">▲${sc}</span>
+          ${ev ? `<span class="ev">📎 ${ev} 證據</span>` : ""}
+        </div>
+      </div>
+    </div>
+    ${kids.length ? `<ul>${kids.map(k => nodeHTML(k, childrenMap)).join("")}</ul>` : ""}
+  </li>`;
+}
+
+function renderTree(st) {
+  const ns = st.nodes || [];
+  document.getElementById("treeCnt").textContent = ns.length + " 節點";
+  const map = {};
+  ns.forEach(n => { (map[n.parent] = map[n.parent] || []).push(n); });
+  Object.values(map).forEach(arr => arr.sort((a,b)=>score(b.priority)-score(a.priority)));
+  const roots = map[null] || map["null"] || [];
+  document.getElementById("tree").innerHTML = roots.length
+    ? roots.map(r => nodeHTML(r, map)).join("")
+    : "<div class='empty'>尚無假設節點 — 先做拆解(DECOMPOSE)。</div>";
+}
+
+function renderKanban(st) {
+  const cols = [["open","待驗"],["testing","驗證中"],["confirmed","成立"],["refuted","推翻"]];
+  const ns = st.nodes || [];
+  document.getElementById("kanban").innerHTML = cols.map(([k,label]) => {
+    const items = ns.filter(n => n.status === k).sort((a,b)=>score(b.priority)-score(a.priority));
+    return `<div class="col k-${k}"><h3><span>${label}</span><span>${items.length}</span></h3>
+      ${items.map(n => `<div class="kcard"><span class="kid">${esc(n.id)}</span> ${esc(n.label)} <span class="score">▲${score(n.priority)}</span></div>`).join("") || "<div class='empty'>—</div>"}
+    </div>`;
+  }).join("");
+}
+
+function renderInsights(st) {
+  const ins = st.insights || [];
+  document.getElementById("insCnt").textContent = ins.length + " 條";
+  document.getElementById("insights").innerHTML = ins.length ? ins.map(i => `
+    <div class="insight">
+      <div class="finding">${esc(i.finding)}</div>
+      <div class="why">so-what:${esc(i.why)}</div>
+      <div class="mag">量級:${esc(i.magnitude)} ${i.fromNodes&&i.fromNodes.length?`· 來自 ${i.fromNodes.map(esc).join(", ")}`:""}</div>
+    </div>`).join("") : "<div class='empty'>尚未收斂出洞察 — 每條洞察必須有 so-what 與量級。</div>";
+}
+
+function renderDecision(st) {
+  const d = st.decision || {};
+  const opts = d.options || [];
+  document.getElementById("decCnt").textContent = d.chosen ? "已決策" : (opts.length ? "評估中" : "未開始");
+  let html = "";
+  if (opts.length) {
+    html += `<table class="opts"><tr><th>選項</th><th>取捨</th><th>預期影響</th><th>風險/前提</th></tr>` +
+      opts.map(o => `<tr class="${o.label===d.chosen?'chosen':''}"><td>${esc(o.label)}${o.label===d.chosen?' ✓':''}</td><td>${esc(o.tradeoffs)}</td><td>${esc(o.expectedImpact)}</td><td>${esc(o.risks)}</td></tr>`).join("") +
+      `</table>`;
+  } else { html += "<div class='empty'>尚無選項 — 策略需有取捨,否則只是願望清單。</div>"; }
+  if (d.nextSteps && d.nextSteps.length) {
+    html += `<div class="nextsteps">` + d.nextSteps.map(s => `<div class="step"><span class="who">${esc(s.who)}</span><span>${esc(s.what)}</span><span class="when">${esc(s.when)}</span></div>`).join("") + `</div>`;
+  }
+  document.getElementById("decision").innerHTML = html;
+}
+
+function renderTimeline(st) {
+  const tl = (st.timeline || []).slice().reverse();
+  document.getElementById("tlCnt").textContent = tl.length + " 筆";
+  document.getElementById("timeline").innerHTML = tl.length ? tl.map(e => `
+    <div class="tl t-${esc(e.type)}">
+      <span class="tt">${esc((e.ts||"").replace("T"," ").slice(0,16))}</span>
+      <span class="tg">${TL_TXT[e.type]||e.type}</span>${esc(e.detail)}
+    </div>`).join("") : "<div class='empty'>尚無事件。每次打斷/注入/重框都會記在這裡。</div>";
+}
+
+function renderFlags(st) {
+  const f = st.redFlags || [];
+  document.getElementById("flagsCnt").textContent = f.length ? f.length + " 個" : "";
+  document.getElementById("flags").innerHTML = f.length
+    ? f.map(x => `<div class="flag">🚩 ${esc(x)}</div>`).join("")
+    : "<div class='empty'>目前沒有觸發反模式 — 保持下去。</div>";
+}
+
+function render(st) {
+  document.getElementById("title").innerHTML = esc(st.session && st.session.title || "未命名 session") + '<span class="sub">決策迭代器 · Decision Iterator</span>';
+  const lens = st.lens || "business";
+  const lb = document.getElementById("lensBadge");
+  lb.className = "badge lens-" + lens; lb.textContent = "鏡頭:" + (LENS_TXT[lens]||lens);
+  document.getElementById("updated").textContent = "更新 " + esc((st.session && st.session.updatedAt || "").replace("T"," ").slice(0,16));
+  renderRail(st); renderFrame(st.frame); renderTree(st); renderKanban(st);
+  renderInsights(st); renderDecision(st); renderTimeline(st); renderFlags(st);
+  document.title = (st.session && st.session.title || "決策迭代器") + " · Decision Iterator";
+}
+
+function applyState(st) {
+  const stamp = st.session && st.session.updatedAt;
+  if (stamp && stamp === lastStamp) return;
+  lastStamp = stamp; render(st);
+}
+
+async function poll() {
+  try {
+    const r = await fetch("./session-state.json", { cache: "no-store" });
+    if (!r.ok) throw 0;
+    const st = await r.json();
+    setLive(true); applyState(st);
+  } catch (e) { setLive(false); }
+}
+function setLive(on) {
+  document.getElementById("liveDot").className = "dot" + (on ? " on" : "");
+  document.getElementById("liveTxt").textContent = on ? "即時連線" : "快照模式";
+}
+function manualRefresh() { lastStamp = null; poll(); }
+
+// 啟動:先用內嵌快照(保證雙擊可開),再嘗試即時連線(需簡易伺服器)
+applyState(EMBEDDED_STATE);
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://joshua.local/decision-iterator/session-state.schema.json",
+  "title": "Decision Iterator Session State",
+  "description": "決策迭代器的單一事實來源(single source of truth)。看板 dashboard.html 只是這份狀態的視圖。Claude 在對話中讀寫此檔,render.mjs 把它轉成看板。",
+  "type": "object",
+  "required": ["schemaVersion", "session", "lens", "phase", "frame", "nodes", "insights", "decision", "timeline", "redFlags"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "session": {
+      "type": "object",
+      "required": ["id", "title", "createdAt", "updatedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "kebab-case 唯一識別,例 2026-01-15-side-project-to-fulltime" },
+        "title": { "type": "string", "description": "人看的標題" },
+        "createdAt": { "type": "string", "description": "ISO8601" },
+        "updatedAt": { "type": "string", "description": "ISO8601,每次狀態變更更新" }
+      }
+    },
+    "lens": {
+      "type": "string",
+      "enum": ["business", "career", "hybrid"],
+      "description": "目前主鏡頭。可中途切換;hybrid 表示同一棵樹同時含商業與職涯分枝。"
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["frame", "decompose", "prioritize", "test", "converge", "decide", "communicate", "iterate"],
+      "description": "目前所在的迴圈階段。引擎可依狀態跳階,不必線性。"
+    },
+    "frame": {
+      "type": "object",
+      "description": "把模糊請求翻成『要做的決策』。商業鏡頭=決策者;職涯鏡頭=為什麼(why)。",
+      "required": ["rawAsk", "decision", "owner", "stakes", "successCriteria"],
+      "additionalProperties": false,
+      "properties": {
+        "rawAsk": { "type": "string", "description": "使用者最初怎麼說的(原話)" },
+        "decision": { "type": "string", "description": "要做的決策,一句話" },
+        "owner": { "type": "string", "description": "決策者是誰 / 這對誰的什麼目標(why)" },
+        "stakes": { "type": "string", "description": "不決定會怎樣 / 卡住什麼" },
+        "successCriteria": { "type": "string", "description": "什麼樣的答案算到位" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "description": "issue tree / 假設樹的節點。parent=null 為根。",
+      "items": {
+        "type": "object",
+        "required": ["id", "parent", "label", "lens", "type", "priority", "status", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "description": "短 ID,例 n1、n2a" },
+          "parent": { "type": ["string", "null"], "description": "父節點 id;根為 null" },
+          "label": { "type": "string", "description": "節點內容:一條假設 / 子問題 / 指標 / 實驗" },
+          "lens": { "type": "string", "enum": ["business", "career"], "description": "此節點屬哪個鏡頭(hybrid session 用來區分分枝)" },
+          "type": {
+            "type": "string",
+            "enum": ["hypothesis", "metric", "experiment", "sub-question"],
+            "description": "hypothesis=待驗假設;sub-question=HMW 子問題;metric=指標口徑;experiment=低成本實驗"
+          },
+          "priority": {
+            "type": "object",
+            "required": ["impact", "likelihood", "cost", "score"],
+            "additionalProperties": false,
+            "properties": {
+              "impact": { "type": "integer", "minimum": 1, "maximum": 5, "description": "影響:成立的話對決策影響多大" },
+              "likelihood": { "type": "integer", "minimum": 1, "maximum": 5, "description": "可能性:這條解釋大盤的機率" },
+              "cost": { "type": "integer", "minimum": 1, "maximum": 5, "description": "驗證成本/難度(1=易,5=難)" },
+              "score": { "type": "number", "description": "由 render 計算 = impact*likelihood/cost,用來排序" }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "testing", "confirmed", "refuted", "parked"],
+            "description": "open=待驗;testing=驗證中;confirmed=成立;refuted=被推翻(仍有價值);parked=擱置(重框後)"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ts", "kind", "summary", "verdict"],
+              "additionalProperties": false,
+              "properties": {
+                "ts": { "type": "string", "description": "ISO8601" },
+                "kind": { "type": "string", "enum": ["data", "experiment", "reflection"], "description": "data=取數;experiment=實驗結果;reflection=自我反思/能量訊號" },
+                "summary": { "type": "string" },
+                "verdict": { "type": "string", "enum": ["supports", "refutes", "mixed"] }
+              }
+            }
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "insights": {
+      "type": "array",
+      "description": "收斂後 1-3 條真正重要的洞察。每條必須有 so-what(why)與量級(magnitude)。",
+      "items": {
+        "type": "object",
+        "required": ["id", "finding", "why", "magnitude", "fromNodes"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "finding": { "type": "string", "description": "發現了什麼" },
+          "why": { "type": "string", "description": "so-what:為什麼重要" },
+          "magnitude": { "type": "string", "description": "量級:對大盤/決策影響多大" },
+          "fromNodes": { "type": "array", "items": { "type": "string" }, "description": "由哪些節點推得" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "description": "策略與建議。選項必須有取捨,否則只是願望清單。",
+      "required": ["options", "chosen", "nextSteps"],
+      "additionalProperties": false,
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "tradeoffs", "expectedImpact", "risks"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "tradeoffs": { "type": "string", "description": "投入什麼、放棄什麼" },
+              "expectedImpact": { "type": "string" },
+              "risks": { "type": "string", "description": "風險與前提:哪些假設一垮策略就垮" }
+            }
+          }
+        },
+        "chosen": { "type": "string", "description": "推薦選項(對應某個 option.label);未決時空字串" },
+        "nextSteps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["who", "what", "when"],
+            "additionalProperties": false,
+            "properties": {
+              "who": { "type": "string" },
+              "what": { "type": "string" },
+              "when": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "description": "打斷軌跡 + 階段變更的時間序。讓『中途打斷加入新思考』可見可稽核。",
+      "items": {
+        "type": "object",
+        "required": ["ts", "type", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "ts": { "type": "string", "description": "ISO8601" },
+          "type": {
+            "type": "string",
+            "enum": ["phase-change", "inject", "repivot", "reprioritize", "branch", "switch-lens", "note"],
+            "description": "inject=注入新節點;repivot=重新框定;reprioritize=重排;branch=分枝;switch-lens=切鏡頭"
+          },
+          "detail": { "type": "string", "description": "發生了什麼,一句話" }
+        }
+      }
+    },
+    "redFlags": {
+      "type": "array",
+      "description": "目前觸發的反模式紅旗(合併兩 skill 的 anti-patterns)。",
+      "items": { "type": "string" }
+    }
+  }
+}
