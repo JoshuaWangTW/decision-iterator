@@ -4,7 +4,7 @@ description: 決策迭代器 — 把任何決策(商業或職涯)當成一個要
 metadata:
   version: "1.0"
   language: "zh-TW (English for technical terms)"
-  builds_on: "business-analysis + career-iteration(Joshua 的個人學習筆記)"
+  builds_on: "business-analysis + career-iteration"
   skill_dir_windows: "C:\\Users\\User\\.claude\\skills\\decision-iterator"
 ---
 
@@ -195,7 +195,7 @@ node "C:\Users\User\.claude\skills\decision-iterator\bin\render.mjs" <session-id
 ---
 
 ## 紅線 / 邊界
-- 這是 Joshua 的**個人學習消化筆記**整合工具,記錄方法與思路,不重製課程逐字教材。
+- 這是一個方法整合工具,記錄決策思路與框架。
 - 不取代、不改動來源 skill `business-analysis` 與 `career-iteration`。
 - 需要心理治療等級介入的情緒困境 → 建議尋求專業協助,不套框架。
 

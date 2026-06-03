@@ -51,4 +51,4 @@ node bin/render.mjs examples/sample-hybrid-decision/session-state.json
 # 然後雙擊 examples/sample-hybrid-decision/dashboard.html
 ```
 
-> 整合自 Joshua 的個人學習筆記(Lillian Chiu / Rodolfo 公開方法論)。不取代來源 skill,吸收其方法。
+> 整合 business-analysis 與 career-iteration 兩套方法為單一決策引擎。

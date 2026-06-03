@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://joshua.local/decision-iterator/session-state.schema.json",
+  "$id": "https://decision-iterator.local/session-state.schema.json",
   "title": "Decision Iterator Session State",
   "description": "決策迭代器的單一事實來源(single source of truth)。看板 dashboard.html 只是這份狀態的視圖。Claude 在對話中讀寫此檔,render.mjs 把它轉成看板。",
   "type": "object",

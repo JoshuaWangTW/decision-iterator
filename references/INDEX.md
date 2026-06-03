@@ -28,5 +28,5 @@
 - `managing-up.md` — Ch4 向上管理:升遷、展現價值、冒牌者症候群、去留判斷、失敗萃取。
 - `communication-influence.md` — Ch5 溝通影響力:冷啟動人脈、共贏、職場訊息、會議管理。
 
-> 這 8 份是 Joshua 的個人學習消化筆記(整合自 Lillian Chiu / Rodolfo 公開方法論),原樣搬入、不改寫。
+> 這 8 份是方法參考筆記,原樣搬入、不改寫。
 > 來源 skill `business-analysis` 與 `career-iteration` 保留不動;本引擎吸收其方法,不取代。
