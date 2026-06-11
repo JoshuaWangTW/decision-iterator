@@ -9,7 +9,7 @@ import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { sessionDir, slugify } from "./lib.mjs";
+import { sessionDir, slugify, openFile } from "./lib.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
@@ -66,8 +66,14 @@ function main() {
 
   if (render) {
     execFileSync(process.execPath, [join(__dir, "render.mjs"), statePath], { stdio: "inherit" });
+    const dashPath = join(dir, "dashboard.html");
+    openFile(dashPath);
+    console.log("📋 看板已在瀏覽器開啟。");
+    console.log("   之後每輪對話更新後,在瀏覽器按 ↻ 或 F5 即可看到最新狀態。");
+    console.log("   (不需要重新開啟,同一個檔案會持續更新)");
   } else {
-    console.log("  接著跑:node \"" + join(__dir, "render.mjs") + "\" \"" + statePath + "\"");
+    console.log("✓ 已建立決策 session:" + id);
+    console.log("  接下來 Claude 會幫你生成看板,你不需要手動操作。");
   }
 }
 

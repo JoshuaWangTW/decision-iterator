@@ -1,6 +1,7 @@
 // 決策迭代器 — 共用工具(零依賴,Node 內建模組)
 import { existsSync, statSync } from "node:fs";
 import { join, resolve, isAbsolute } from "node:path";
+import { exec } from "node:child_process";
 
 export const SESSIONS_DIR = ".decision-iterator";
 
@@ -66,4 +67,21 @@ export function lintState(state) {
     if (n.parent && !( (state.nodes||[]).some(x => x.id === n.parent) )) warn.push(`節點 ${n.id} 的 parent「${n.parent}」不存在`);
   }
   return warn;
+}
+
+/**
+ * 跨平台開啟檔案(瀏覽器)。fire-and-forget,不等待結果。
+ * Windows: start ""(exec 而非 execFile;第一個 "" 是 start 的 title 參數,
+ *          必須給,否則路徑含空格時空格前段會被當成視窗標題)
+ * macOS: open;Linux: xdg-open
+ */
+export function openFile(filePath) {
+  const plat = process.platform;
+  if (plat === "win32") {
+    exec(`start "" "${filePath}"`);
+  } else if (plat === "darwin") {
+    exec(`open "${filePath}"`);
+  } else {
+    exec(`xdg-open "${filePath}"`);
+  }
 }

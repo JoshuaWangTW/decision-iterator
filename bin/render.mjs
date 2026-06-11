@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { resolveStatePath, normalizeScores, lintState, SESSIONS_DIR } from "./lib.mjs";
+import { resolveStatePath, normalizeScores, lintState, openFile, SESSIONS_DIR } from "./lib.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = join(__dir, "..", "assets", "dashboard-template.html");
@@ -27,7 +27,12 @@ function findLatest(cwd = process.cwd()) {
 }
 
 function main() {
-  const arg = process.argv[2];
+  // 從 argv 過濾出 --open flag,剩下的才是位置參數
+  const rawArgs = process.argv.slice(2);
+  const openFlag = rawArgs.includes("--open");
+  const positional = rawArgs.filter(a => a !== "--open");
+  const arg = positional[0];
+
   let statePath;
   try {
     statePath = arg ? resolveStatePath(arg) : findLatest();
@@ -72,9 +77,14 @@ function main() {
   const outPath = join(dirname(statePath), "dashboard.html");
   writeFileSync(outPath, injected, "utf8");
 
-  console.log("✓ 已渲染看板:" + outPath);
-  console.log("  鏡頭=" + state.lens + " 階段=" + state.phase + " 節點=" + (state.nodes || []).length + " 洞察=" + (state.insights || []).length);
-  console.log("  雙擊開啟,或在該資料夾跑  python -m http.server  取得即時自動刷新。");
+  console.log("✓ 看板已更新!");
+  console.log("  在瀏覽器按 ↻ 載入最新就能看到最新狀態。");
+  console.log("  (如果還沒開過看板,雙擊這個檔案:" + outPath + ")");
+
+  // --open flag:首次 render 時加入,瀏覽器自動開啟;後續 render 不加(使用者按 ↻ 載入最新即可)
+  if (openFlag) {
+    openFile(outPath);
+  }
 }
 
 main();
