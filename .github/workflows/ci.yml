@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: 語法檢查(所有 bin 腳本)
+        run: |
+          for f in $(git ls-files 'bin/*.mjs'); do
+            node --check "$f"
+          done
+
+      - name: 渲染範例 session → 驗證看板產出
+        run: |
+          node bin/render.mjs examples/sample-hybrid-decision/session-state.json
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('examples/sample-hybrid-decision/dashboard.html', 'utf8');
+            // 占位符必須被換掉、內嵌 state 必須是合法 JSON
+            if (html.includes('__STATE__')) { console.error('FAIL: __STATE__ 未注入'); process.exit(1); }
+            const m = html.match(/const EMBEDDED_STATE = ([\\s\\S]*?);\\nlet lastStamp/);
+            if (!m) { console.error('FAIL: 找不到 EMBEDDED_STATE'); process.exit(1); }
+            JSON.parse(m[1]);
+            console.log('✓ 看板渲染驗證通過');
+          "
